@@ -298,14 +298,15 @@ defmodule ArchEthicWeb.API.TransactionPayloadTest do
             "keys" => %{
               "authorizedKeys" => [
                 %{
-                  "key" => "hello"
+                  "publicKey" => "key",
+                  "encryptedSecretKey" => "hello"
                 }
               ]
             }
           }
         })
 
-      assert ["public key must be hexadecimal"] =
+      assert [%{publicKey: ["must be hexadecimal"], encryptedSecretKey: ["must be hexadecimal"]}] =
                changeset |> get_errors |> get_in([:data, :keys, :authorizedKeys])
 
       changeset =
@@ -324,13 +325,16 @@ defmodule ArchEthicWeb.API.TransactionPayloadTest do
           "data" => %{
             "keys" => %{
               "authorizedKeys" => [
-                Map.put(%{}, Base.encode16(:crypto.strong_rand_bytes(32)), "hello")
+                %{
+                  "publicKey" => Base.encode16(:crypto.strong_rand_bytes(32)),
+                  "encryptedSecretKey" => "hello"
+                }
               ]
             }
           }
         })
 
-      assert ["public key is invalid"] =
+      assert [%{publicKey: ["invalid key size"], encryptedSecretKey: ["must be hexadecimal"]}] =
                changeset |> get_errors |> get_in([:data, :keys, :authorizedKeys])
     end
 
@@ -351,17 +355,17 @@ defmodule ArchEthicWeb.API.TransactionPayloadTest do
           "data" => %{
             "keys" => %{
               "authorizedKeys" => [
-                Map.put(
-                  %{},
-                  Base.encode16(<<0::8, 0::8, :crypto.strong_rand_bytes(32)::binary>>),
-                  "hello"
-                )
+                %{
+                  "publicKey" =>
+                    Base.encode16(<<0::8, 0::8, :crypto.strong_rand_bytes(32)::binary>>),
+                  "encryptedSecretKey" => "hello"
+                }
               ]
             }
           }
         })
 
-      assert ["encrypted key must be hexadecimal"] =
+      assert [%{encryptedSecretKey: ["must be hexadecimal"]}] =
                changeset |> get_errors |> get_in([:data, :keys, :authorizedKeys])
     end
 
@@ -441,7 +445,8 @@ defmodule ArchEthicWeb.API.TransactionPayloadTest do
                  secrets: [secret],
                  authorized_keys: [
                    %{
-                     authorized_public_key => encrypted_key
+                     public_key: authorized_public_key,
+                     encrypted_secret_key: encrypted_key
                    }
                  ]
                }
@@ -465,11 +470,10 @@ defmodule ArchEthicWeb.API.TransactionPayloadTest do
                  "keys" => %{
                    "secrets" => [Base.encode16(secret)],
                    "authorizedKeys" => [
-                     Map.put(
-                       %{},
-                       Base.encode16(authorized_public_key),
-                       Base.encode16(encrypted_key)
-                     )
+                     %{
+                       "publicKey" => Base.encode16(authorized_public_key),
+                       "encryptedSecretKey" => Base.encode16(encrypted_key)
+                     }
                    ]
                  },
                  "recipients" => [Base.encode16(recipient)]

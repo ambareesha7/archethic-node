@@ -7,7 +7,7 @@ defmodule ArchEthicWeb.API.TransactionPayload do
   alias ArchEthic.Utils
 
   alias ArchEthicWeb.API.Types.AddressList
-  alias ArchEthicWeb.API.Types.AuthorizedKeys
+  alias ArchEthicWeb.API.Types.AuthorizedKey
   alias ArchEthicWeb.API.Types.Hash
   alias ArchEthicWeb.API.Types.Hex
   alias ArchEthicWeb.API.Types.PublicKey
@@ -42,7 +42,11 @@ defmodule ArchEthicWeb.API.TransactionPayload do
 
       embeds_one :keys, Keys do
         field(:secrets, SecretList)
-        field(:authorizedKeys, AuthorizedKeys)
+
+        embeds_many :authorizedKeys, AuthorizedKey do
+          field(:publicKey, PublicKey)
+          field(:encryptedSecretKey, Hex)
+        end
       end
 
       field(:recipients, AddressList)
@@ -83,7 +87,13 @@ defmodule ArchEthicWeb.API.TransactionPayload do
 
   defp changeset_keys(changeset, params) do
     changeset
-    |> cast(params, [:secrets, :authorizedKeys])
+    |> cast(params, [:secrets])
+    |> cast_embed(:authorizedKeys, with: &changeset_authorized_key/2)
+  end
+
+  defp changeset_authorized_key(changeset, params) do
+    changeset
+    |> cast(params, [:publicKey, :encryptedSecretKey])
   end
 
   defp changeset_ledger(changeset, params) do
